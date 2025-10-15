@@ -106,35 +106,60 @@ func (q *BytesQueue) Push(data []byte) (int, error) {
 	return index, nil
 }
 
+// allocateAdditionalMemory 为 BytesQueue 分配额外内存，使其容量至少能容纳 minimum 字节。
+// 该方法在当前容量不足时被调用（例如 Push 操作空间不够）。
+// 扩容策略：至少翻倍，但不超过 maxCapacity（若设置）。
 func (q *BytesQueue) allocateAdditionalMemory(minimum int) {
-	start := time.Now()
+	start := time.Now() // 记录扩容开始时间（用于性能日志）
+
+	// Step 1: 确保新容量至少比 minimum 大
 	if q.capacity < minimum {
 		q.capacity += minimum
 	}
+
+	// Step 2: 将容量翻倍（即使已满足 minimum，也尝试翻倍以减少频繁扩容）
 	q.capacity = q.capacity * 2
+
+	// Step 3: 如果设置了最大容量限制（maxCapacity > 0），则不能超过它
 	if q.capacity > q.maxCapacity && q.maxCapacity > 0 {
 		q.capacity = q.maxCapacity
 	}
 
+	// Step 4: 保存旧数组指针，用于后续数据迁移
 	oldArray := q.array
+
+	// Step 5: 分配新的大容量字节数组
 	q.array = make([]byte, q.capacity)
 
+	// Step 6: 判断是否需要迁移旧数据
+	// leftMarginIndex 是一个常量（通常为 0），q.rightMargin 表示已使用数据的右边界
 	if leftMarginIndex != q.rightMargin {
+		// 6.1 将旧数组中 [0, q.rightMargin) 的数据拷贝到新数组开头
 		copy(q.array, oldArray[:q.rightMargin])
 
+		// 6.2 处理“环形队列已绕回”的情况：即 tail <= head（数据跨越了数组末尾）
 		if q.tail <= q.head {
 			if q.tail != q.head {
-				// created slice is slightly larger than need but this is fine after only the needed bytes are copied
+				// 说明中间有一段“空洞”（已被弹出的数据），但 head 到数组末尾还有有效数据？
+				// 实际上，这里逻辑存疑或为特殊处理 —— 更可能是将“尾部空闲段”用 dummy 数据填充？
+				// 注：make([]byte, q.head-q.tail) 创建零值切片，然后 push 它（可能用于对齐？）
+				// 但此操作在扩容后似乎多余，可能是历史遗留或调试代码。
 				q.push(make([]byte, q.head-q.tail), q.head-q.tail)
 			}
 
+			// 6.3 重置 head 和 tail 指针：
+			// - head 移到起始位置（leftMarginIndex = 0）
+			// - tail 指向原数据末尾（即新数据的末尾）
 			q.head = leftMarginIndex
 			q.tail = q.rightMargin
 		}
+		// else: 如果 tail > head（正常线性状态），则 head/tail 不变，数据已连续拷贝到开头
 	}
 
+	// Step 7: 标记队列不再“满”（因为刚扩容）
 	q.full = false
 
+	// Step 8: 若启用 verbose 模式，打印扩容耗时和新容量
 	if q.verbose {
 		log.Printf("Allocated new queue in %s; Capacity: %d \n", time.Since(start), q.capacity)
 	}
