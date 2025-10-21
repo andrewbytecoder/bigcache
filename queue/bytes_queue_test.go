@@ -20,7 +20,7 @@ func TestPushAndPop(t *testing.T) {
 	_, err := queue.Pop()
 
 	// then
-	assertEqual(t, "Empty queue", err.Error())
+	assertEqual(t, "queue is empty", err.Error())
 
 	// when
 	queue.Push(entry)
@@ -56,7 +56,7 @@ func TestPeek(t *testing.T) {
 	err2 := queue.peekCheckErr(queue.head)
 	// then
 	assertEqual(t, err, err2)
-	assertEqual(t, "Empty queue", err.Error())
+	assertEqual(t, "queue is empty", err.Error())
 	assertEqual(t, 0, len(read))
 
 	// when
@@ -113,7 +113,7 @@ func TestReset(t *testing.T) {
 	read, err := queue.Peek()
 
 	// then
-	assertEqual(t, "Empty queue", err.Error())
+	assertEqual(t, "queue is empty", err.Error())
 	assertEqual(t, 0, len(read))
 
 	// when
@@ -129,7 +129,7 @@ func TestReset(t *testing.T) {
 	read, err = queue.Peek()
 
 	// then
-	assertEqual(t, "Empty queue", err.Error())
+	assertEqual(t, "queue is empty", err.Error())
 	assertEqual(t, 0, len(read))
 }
 
@@ -349,7 +349,7 @@ func TestGetEntryFromInvalidIndex(t *testing.T) {
 	// then
 	assertEqual(t, err, err2)
 	assertEqual(t, []byte(nil), result)
-	assertEqual(t, "Index must be greater than zero. Invalid index.", err.Error())
+	assertEqual(t, "index must be greater than zero, Invalid index", err.Error())
 }
 
 func TestGetEntryFromIndexOutOfRange(t *testing.T) {
@@ -366,7 +366,7 @@ func TestGetEntryFromIndexOutOfRange(t *testing.T) {
 	// then
 	assertEqual(t, err, err2)
 	assertEqual(t, []byte(nil), result)
-	assertEqual(t, "Index out of range", err.Error())
+	assertEqual(t, "index out of bounds", err.Error())
 }
 
 func TestGetEntryFromEmptyQueue(t *testing.T) {
@@ -382,7 +382,7 @@ func TestGetEntryFromEmptyQueue(t *testing.T) {
 	// then
 	assertEqual(t, err, err2)
 	assertEqual(t, []byte(nil), result)
-	assertEqual(t, "Empty queue", err.Error())
+	assertEqual(t, "queue is empty", err.Error())
 }
 
 func TestMaxSizeLimit(t *testing.T) {
@@ -399,7 +399,7 @@ func TestMaxSizeLimit(t *testing.T) {
 
 	// then
 	assertEqual(t, 50, capacity)
-	assertEqual(t, "Full queue. Maximum size limit reached.", err.Error())
+	assertEqual(t, "queue is full, Maximum size limit reached", err.Error())
 	assertEqual(t, blob('a', 25), pop(queue))
 	assertEqual(t, blob('b', 5), pop(queue))
 }
